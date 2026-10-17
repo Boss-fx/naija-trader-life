@@ -116,6 +116,7 @@ canvas{display:block;width:100%;height:240px}
 .share{width:100%;min-height:96px;resize:vertical;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:var(--mono);font-size:12px;box-sizing:border-box}
 @media (max-width:420px){.hud{grid-template-columns:repeat(2,1fr)}}
 @media (prefers-reduced-motion: reduce){.danfo,.keke,.twinkle{animation:none}*{transition:none!important}}
+#snd{position:fixed;right:max(12px,env(safe-area-inset-right,0px));bottom:max(12px,env(safe-area-inset-bottom,0px));z-index:50;width:44px;height:44px;border-radius:50%;border:1px solid #2A2A2A;background:#141414;color:#F2F2F2;font-size:18px;cursor:pointer;box-shadow:0 4px 14px #0008}#snd:focus-visible{outline:2px solid #00B450;outline-offset:2px}
 </style>
 
 </head>
@@ -129,6 +130,91 @@ const $ = (s, r = document) => r.querySelector(s);
 const naira = n => (n < 0 ? "-₦" : "₦") + Math.abs(Math.round(n)).toLocaleString("en-NG");
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- sound: synthesized live with Web Audio, no files ---------- */
+const Sound = (() => {
+  let ctx = null, master = null, noiseBuf = null;
+  let on = true; try { on = localStorage.getItem("ntl_sound") !== "off"; } catch (e) {}
+  function init() {
+    if (ctx) { if (ctx.state === "suspended") ctx.resume(); return true; }
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return false;
+    ctx = new AC(); master = ctx.createGain(); master.gain.value = .55; master.connect(ctx.destination);
+    noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+    const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    return true;
+  }
+  const ok = () => on && init();
+  const now = () => ctx.currentTime;
+  function env(g, t, a, peak, dur) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); }
+  function tone(f, t, dur, { type = "sine", vol = .3, f2 = null, a = .005, dest = master, lp = null } = {}) {
+    const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type; o.frequency.setValueAtTime(f, t);
+    if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    env(g, t, a, vol, dur); let out = g;
+    if (lp) { const fl = ctx.createBiquadFilter(); fl.type = "lowpass"; fl.frequency.value = lp; g.connect(fl); out = fl; }
+    o.connect(g); out.connect(dest); o.start(t); o.stop(t + dur + .05); return o;
+  }
+  function noise(t, dur, { vol = .2, type = "bandpass", f = 1000, q = 1, a = .005 } = {}) {
+    const s = ctx.createBufferSource(), fl = ctx.createBiquadFilter(), g = ctx.createGain();
+    s.buffer = noiseBuf; s.loop = true; fl.type = type; fl.frequency.value = f; fl.Q.value = q; env(g, t, a, vol, dur);
+    s.connect(fl); fl.connect(g); g.connect(master); s.start(t); s.stop(t + dur + .05);
+  }
+  const fx = {
+    tap() { const t = now(); tone(1200, t, .04, { type: "triangle", vol: .08 }); },
+    // talking drum "gbin": pitch bends down like the dundun squeezed under the arm
+    drum(t = now(), from = 190, to = 105, vol = .5) { tone(from, t, .32, { f2: to, vol, a: .003 }); noise(t, .03, { vol: .15, f: 2500, q: .7 }); },
+    flourish() { const t = now(); [[0, 210, 120], [.16, 170, 150], [.3, 230, 110], [.42, 190, 100], [.62, 260, 95]].forEach(([d, a, b]) => fx.drum(t + d, a, b, .45)); },
+    // bank SMS credit alert: the sweetest sound in Lagos
+    credit() { const t = now(); [[0, 1318], [.11, 1760], [.32, 1318], [.43, 1760]].forEach(([d, f]) => { tone(f, t + d, .22, { vol: .22 }); tone(f * 2, t + d, .12, { vol: .05 }); }); },
+    debit() { const t = now(); tone(740, t, .18, { type: "triangle", vol: .2 }); tone(523, t + .16, .3, { type: "triangle", vol: .2 }); },
+    // danfo horn: "pom-pom!"
+    danfo() { const t = now(); [0, .2].forEach(d => [392, 494, 587].forEach(f => tone(f, t + d, .16, { type: "sawtooth", vol: .07, lp: 1400, a: .01 }))); noise(t, .9, { vol: .03, type: "lowpass", f: 500 }); },
+    // phone vibrating on the table: that Telegram "Oga" DM
+    buzz() { const t = now(); [0, .28, .56].forEach(d => tone(140, t + d, .2, { type: "square", vol: .09, lp: 400, a: .01 })); tone(1568, t + .9, .15, { vol: .12 }); },
+    notify() { const t = now(); tone(988, t, .15, { vol: .15 }); tone(1319, t + .1, .25, { vol: .15 }); },
+    // NEPA takes light: fridge hum dies out
+    powerDown() { const t = now(); tone(120, t, 1.1, { type: "sawtooth", f2: 30, vol: .12, lp: 600 }); tone(600, t, .8, { f2: 50, vol: .1 }); },
+    // "I better pass my neighbour" generator kicking in
+    generator() {
+      const t = now(), dur = 3; noise(t, .25, { vol: .25, type: "lowpass", f: 400 });
+      const o = ctx.createOscillator(), lfo = ctx.createOscillator(), lg = ctx.createGain(), g = ctx.createGain(), fl = ctx.createBiquadFilter();
+      o.type = "sawtooth"; o.frequency.setValueAtTime(30, t + .2); o.frequency.exponentialRampToValueAtTime(52, t + .9);
+      lfo.frequency.value = 13; lg.gain.value = .05; lfo.connect(lg); lg.connect(g.gain);
+      fl.type = "lowpass"; fl.frequency.value = 320; env(g, t + .2, .3, .14, dur);
+      o.connect(fl); fl.connect(g); g.connect(master); o.start(t + .2); lfo.start(t + .2); o.stop(t + dur + .3); lfo.stop(t + dur + .3);
+    },
+    // night: crickets outside the window
+    crickets() { const t = now(); for (let i = 0; i < 9; i++) { const s = t + .15 + i * .32 + (i % 3) * .04; for (let k = 0; k < 3; k++) tone(4400 + (i % 2) * 300, s + k * .045, .03, { vol: .035, a: .002 }); } },
+    tick() { if (!ok()) return; tone(2000, now(), .015, { type: "square", vol: .025 }); },
+    win() { const t = now(); [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * .08, .3, { type: "triangle", vol: .16 })); setTimeout(() => on && fx.credit(), 450); },
+    loss() { const t = now(); tone(220, t, .35, { type: "sawtooth", f2: 110, vol: .1, lp: 900 }); setTimeout(() => on && fx.debit(), 380); },
+    calm() { const t = now(); tone(660, t, .3, { vol: .12 }); tone(880, t + .12, .4, { vol: .1 }); },
+    kaching() { const t = now(); noise(t, .08, { vol: .2, f: 4000, q: 2 }); [1568, 2093, 2637].forEach((f, i) => tone(f, t + .05 + i * .06, .45, { vol: .12 })); }
+  };
+  function play(name) { if (!ok() || !fx[name]) return; try { fx[name](); } catch (e) {} }
+  let prev = { S: null, phase: null, cash: 0, day: 0 };
+  function hook() {
+    if (!S) { prev = { S: null }; return; }
+    const fresh = prev.S !== S, ph = S.phase, delta = S.cash - (fresh ? S.cash : prev.cash), changed = fresh || ph !== prev.phase || S.day !== prev.day;
+    if (changed) {
+      if (ph === "morning") { play("danfo"); if (delta > 0) setTimeout(() => play("credit"), 700); }
+      else if (ph === "hustleDone" && delta > 0) play("credit");
+      else if (ph === "event") play(S.event.id === "nepa" ? "powerDown" : ["signals", "ponzi", "bet"].includes(S.event.id) ? "buzz" : "notify");
+      else if (ph === "eventDone") { if (S.event && S.event.id === "nepa" && S.light) play("generator"); else if (delta > 0) play("credit"); else if (delta < 0) play("debit"); }
+      else if (ph === "marketResult") play(S.result.kind === "win" ? "win" : S.result.kind === "loss" ? "loss" : "calm");
+      else if (ph === "night") { play("crickets"); if (S.day === DAYS && S.rentPaid) setTimeout(() => play("kaching"), 500); }
+      else if (ph === "over") play("flourish");
+    }
+    prev = { S, phase: ph, cash: S.cash, day: S.day };
+  }
+  function setOn(v) { on = v; try { localStorage.setItem("ntl_sound", v ? "on" : "off"); } catch (e) {} if (v) { init(); play("drum"); } paintBtn(); }
+  function paintBtn() { const b = document.getElementById("snd"); if (b) { b.textContent = on ? "🔊" : "🔇"; b.setAttribute("aria-label", on ? "Mute sound" : "Turn sound on"); b.setAttribute("aria-pressed", String(on)); } }
+  document.addEventListener("pointerdown", e => {
+    const b = e.target.closest("button"); if (!b || b.disabled || b.id === "snd") return;
+    if (b.matches(".primary,.cta,.go")) play("drum"); else play("tap");
+  });
+  return { play, hook, tick: fx.tick, setOn, get on() { return on; }, paintBtn };
+})();
+
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 
 const DAYS = 7, RENT = 15000;
@@ -349,7 +435,7 @@ function resolveMarket(choice) {
   if (choice === "trade" && !reduceMotion) {
     S.phase = "playing"; render();
     let k = 0; clearInterval(anim);
-    anim = setInterval(() => { k++; drawChart($("#chart"), m, S.trade, S.pathOut.slice(0, k)); if (k >= S.pathOut.length) { clearInterval(anim); setTimeout(finishMarket, 350); } }, 110);
+    anim = setInterval(() => { k++; Sound.tick(); drawChart($("#chart"), m, S.trade, S.pathOut.slice(0, k)); if (k >= S.pathOut.length) { clearInterval(anim); setTimeout(finishMarket, 350); } }, 110);
   } else finishMarket();
 }
 function finishMarket() { if (S.pathOut) S.extra = S.pathOut; S.cash += S.result.pnl; S.disc = clamp(S.disc + S.result.d, 0, 100); S.phase = "marketResult"; render(); }
@@ -532,7 +618,7 @@ function renderStart(app) {
       <li><b>Night:</b> a simulated gold chart. Trade, wait, or protect the rent money.</li>
       <li><b>Scoring:</b> your process is scored separately from the result. A good trade that loses still earns discipline.</li></ol></div>
     ${best.length ? `<p class="note">Your best weeks on this device: ${best.map(b => `${b.rank} (${b.score})`).join(" · ")}</p>` : ""}
-    <p class="fine">Every player gets the same simulated week, so you can compare runs with friends. Virtual money only; the chart is simulated and predicts nothing about real gold prices. Not financial advice. Learn the real skill at <a href="https://bossfxcademy.com" target="_blank" rel="noopener">bossfxcademy.com</a>.</p>`;
+    <p class="fine">Every player gets the same simulated week, so you can compare runs with friends. Virtual money only; the chart is simulated and predicts nothing about real gold prices. Not financial advice. Tap 🔊 to mute. Learn the real skill at <a href="https://bossfxcademy.com" target="_blank" rel="noopener">bossfxcademy.com</a>.</p>`;
   app.querySelectorAll("[data-p]").forEach(b => b.onclick = () => { setup.path = b.dataset.p; render(); });
   app.querySelectorAll("[data-city]").forEach(b => b.onclick = () => { setup.city = b.dataset.city; render(); });
   $("#start").onclick = newGame;
@@ -577,6 +663,8 @@ function renderEnd(app) {
 
 let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { const c = $("#chart"); if (c && S && S.market && S.phase !== "playing") drawChart(c, S.market, S.trade, S.extra); }, 120); });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { const c = $("#chart"); if (c && S && S.market) drawChart(c, S.market, S.trade, S.extra); });
+const _render0 = render; render = function () { _render0(); Sound.hook(); };
+const sb = document.createElement("button"); sb.id = "snd"; sb.type = "button"; sb.onclick = () => Sound.setOn(!Sound.on); document.body.appendChild(sb); Sound.paintBtn();
 render();
 })();
 </script>
