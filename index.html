@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Survive one week in Lagos as a trader: hustle, dodge scams, protect your rent and read the levels. Free browser game by BossFx Academy. Virtual money only.">
+<meta property="og:title" content="Naija Trader Life">
+<meta property="og:description" content="Rent is due on day 7. NEPA has taken light. The gold chart is calling. Can you survive the week without doing anything reckless?">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="theme-color" content="#0B0B0B">
+<style>:root{color-scheme:dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Naija Trader Life</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Geist+Mono:wght@400;600&family=Outfit:wght@400;600;700&display=swap">
+<style>
+/* Layout: phone-width column. Living Lagos scene on top (time of day, NEPA light, danfo on the bridge), HUD, then the day's action card. Single committed dark BossFx look. */
+:root{
+  --bg:#0B0B0B; --panel:#141414; --panel2:#1B1B1B; --line:#2A2A2A;
+  --fg:#F2F2F2; --muted:#9A9F9B; --green:#00B450; --green-soft:rgba(0,180,80,.14);
+  --red:#F02828; --red-soft:rgba(240,40,40,.14); --amber:#F2B233; --amber-soft:rgba(242,178,51,.12);
+  --danfo:#F5C518;
+  --display:"Big Shoulders Display",Impact,"Arial Narrow",sans-serif;
+  --body:"Outfit",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Geist Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--body);font-size:15px;line-height:1.45;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 32px}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible,a:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.brand{display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+.brand b{color:var(--green);font-weight:600}
+h1{font-family:var(--display);font-weight:900;font-size:clamp(52px,15vw,84px);line-height:.88;margin:0;letter-spacing:.01em}
+h1 span{color:var(--green)}
+.tag{font-size:17px;color:var(--muted);margin:0;max-width:46ch}
+.label{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+
+/* scene */
+.scene{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#101820}
+.scene svg{display:block;width:100%;height:auto}
+.scene .badge{position:absolute;left:10px;top:10px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;background:rgba(11,11,11,.72);padding:5px 9px;border-radius:999px;color:var(--fg)}
+.scene .badge b{color:var(--green)}
+.scene .light{position:absolute;right:10px;top:10px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:5px 9px;border-radius:999px;background:rgba(11,11,11,.72)}
+.scene .light.on{color:var(--amber)} .scene .light.off{color:var(--red)}
+@keyframes drive{from{transform:translateX(-80px)}to{transform:translateX(480px)}}
+@keyframes drive2{from{transform:translateX(480px)}to{transform:translateX(-80px)}}
+@keyframes blink{0%,100%{opacity:.25}50%{opacity:1}}
+.danfo{animation:drive 9s linear infinite}
+.keke{animation:drive2 13s linear infinite}
+.twinkle{animation:blink 3s ease-in-out infinite}
+
+/* hud */
+.hud{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 10px;min-width:0}
+.stat .v{font-family:var(--mono);font-weight:600;font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meter{height:5px;border-radius:3px;background:var(--line);margin-top:6px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--green);transition:width .4s}
+.meter.amber i{background:var(--amber)} .meter.red i{background:var(--red)}
+.steps{display:flex;gap:6px}
+.steps span{flex:1;height:4px;border-radius:2px;background:var(--line)}
+.steps span.done{background:var(--green)} .steps span.now{background:var(--fg)}
+
+.card{border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;border:1px solid var(--line);background:var(--panel)}
+.card.event{border-color:var(--amber);background:linear-gradient(180deg,var(--amber-soft),var(--panel))}
+.card.win{border-color:var(--green);background:linear-gradient(180deg,var(--green-soft),var(--panel))}
+.card.loss{border-color:var(--red);background:linear-gradient(180deg,var(--red-soft),var(--panel))}
+.card h3{margin:0;font-family:var(--display);font-weight:900;font-size:30px;line-height:1;letter-spacing:.02em}
+.card p{margin:0}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{display:grid;grid-template-columns:1fr auto;gap:2px 10px;text-align:left;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel2)}
+.opt:hover{border-color:#3a3a3a}
+.opt .t{font-weight:700}
+.opt .d{grid-column:1;font-size:13px;color:var(--muted)}
+.opt .k{grid-row:1/3;grid-column:2;align-self:center;font-family:var(--mono);font-size:12px;text-align:right;white-space:nowrap}
+.opt[disabled]{opacity:.35;cursor:not-allowed}
+.opt.sel{border-color:var(--green);background:linear-gradient(180deg,var(--green-soft),var(--panel2))}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btns button{flex:1 1 140px;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);font-weight:600}
+.btns button.primary{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.cta{background:var(--green);color:#04140A;font-family:var(--display);font-weight:900;font-size:26px;letter-spacing:.04em;padding:14px;border-radius:10px;text-transform:uppercase}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);font-family:var(--mono);font-size:13px}
+.chip[aria-pressed="true"]{border-color:var(--green);color:var(--green);background:var(--green-soft)}
+.paths{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.path{text-align:left;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);display:flex;flex-direction:column;gap:6px}
+.path[aria-pressed="true"]{border-color:var(--green);background:linear-gradient(180deg,var(--green-soft),var(--panel))}
+.path .nm{font-family:var(--display);font-weight:900;font-size:30px;line-height:1}
+.path .ds{font-size:13px;color:var(--muted)} .path .st{font-family:var(--mono);font-size:12px}
+.how{border-top:1px solid var(--line);padding-top:12px;font-size:14px;color:var(--muted)}
+.how ol{margin:6px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.how b{color:var(--fg)}
+.fine{font-size:12px;color:var(--muted)} .fine a{color:var(--green)}
+.note{font-size:13px;color:var(--muted)}
+.coach{font-size:13px;border-left:3px solid var(--green);padding:6px 10px;background:var(--green-soft);border-radius:0 8px 8px 0}
+
+.chartbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 10px 6px}
+.charthead{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--muted);padding:0 2px 6px}
+.charthead b{color:var(--fg);font-weight:600}
+canvas{display:block;width:100%;height:240px}
+.dirs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dir{padding:12px 6px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);font-family:var(--display);font-weight:900;font-size:22px;letter-spacing:.04em}
+.dir.buy[aria-pressed="true"]{background:var(--green);color:#04140A;border-color:var(--green)}
+.dir.sell[aria-pressed="true"]{background:var(--red);color:#fff;border-color:var(--red)}
+.go{background:var(--fg);color:var(--bg);font-family:var(--display);font-weight:900;font-size:22px;letter-spacing:.04em;padding:12px;border-radius:10px;text-transform:uppercase}
+.go:disabled{opacity:.3;cursor:not-allowed}
+.scores{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.scoreline{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:13px}
+.pos{color:var(--green)} .neg{color:var(--red)} .amb{color:var(--amber)}
+
+.sharecard{border-radius:14px;padding:18px;border:1px solid var(--green);background:radial-gradient(120% 90% at 100% 0%,rgba(0,180,80,.28),transparent 60%),var(--panel);display:flex;flex-direction:column;gap:10px}
+.sharecard h2{font-family:var(--display);font-weight:900;font-size:clamp(40px,12vw,64px);line-height:.9;margin:0;color:var(--green)}
+.sharecard .cap{font-size:16px}
+.share{width:100%;min-height:96px;resize:vertical;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:var(--mono);font-size:12px;box-sizing:border-box}
+@media (max-width:420px){.hud{grid-template-columns:repeat(2,1fr)}}
+@media (prefers-reduced-motion: reduce){.danfo,.keke,.twinkle{animation:none}*{transition:none!important}}
+</style>
+
+</head>
+<body>
+<div class="wrap" id="app" aria-live="polite"></div>
+
+<script>
+(() => {
+"use strict";
+const $ = (s, r = document) => r.querySelector(s);
+const naira = n => (n < 0 ? "-₦" : "₦") + Math.abs(Math.round(n)).toLocaleString("en-NG");
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+const DAYS = 7, RENT = 15000;
+const PATHS = {
+  lapo: { name: "LAPO", start: 30000, food: 1500, blurb: "Microfinance loan, self-con in Yaba, hustle by day.", stat: "₦30,000 · rent ₦15,000 due day 7" },
+  nepo: { name: "NEPO", start: 90000, food: 3500, blurb: "Uncle's money, Lekki lifestyle, owambe pressure.", stat: "₦90,000 · rent ₦15,000 · big-man costs" }
+};
+const CITY = { Lagos: "Yaba", Abuja: "Wuse", PH: "D-Line" };
+
+/* ---------- the week's market (fixed, so friends play the same week) ---------- */
+const WEEK = [
+  { zone: "support", seed: 11, title: "Gold pulls back to support", win: { buy: true, sell: false },
+    hint: "Price is sitting on support. A buy with the stop just below the level is the textbook setup.",
+    waitText: "Gold bounced cleanly off support without you. Patience is fine, but that was a real setup.", waitScore: 0 },
+  { zone: "mid", seed: 22, title: "Choppy, middle of the range", win: { buy: false, sell: false },
+    hint: "No level nearby. Price is chopping in the middle of the range. This is where accounts bleed.",
+    waitText: "Price chopped up and down and hit both sides. Waiting saved you from a coin flip.", waitScore: 3 },
+  { zone: "resistance", seed: 33, title: "Rally into resistance", win: { buy: false, sell: true },
+    hint: "Price has run into resistance it rejected twice before. A sell with the stop above is the setup.",
+    waitText: "Gold rejected resistance and dropped. A clean setup passed, but your money is intact.", waitScore: 0 },
+  { zone: "support", seed: 44, title: "Support under pressure", win: { buy: false, sell: true },
+    hint: "Price is at support again, but this is the third test. Levels weaken each time they are hit.",
+    waitText: "Support finally broke. Waiting avoided a loss, even though the setup looked right.", waitScore: 2 },
+  { zone: "mid", seed: 55, title: "US inflation data at 1:30pm", news: true, win: { buy: true, sell: false },
+    hint: "High-impact news is due. Spreads widen and price can spike both ways. Professionals often stand aside.",
+    waitText: "The news spike whipped price both ways. Standing aside before big news is a pro habit.", waitScore: 3 },
+  { zone: "support", seed: 66, title: "Fresh bounce zone", win: { buy: true, sell: false },
+    hint: "Price returned to support after the breakdown and buyers stepped in. Smaller size is wise after a broken level.",
+    waitText: "Gold bounced from support. You let a decent setup go.", waitScore: 0 },
+  { zone: "resistance", seed: 77, title: "Friday: NFP and rent tomorrow", news: true, win: { buy: false, sell: true },
+    hint: "Jobs data today and your rent is due tomorrow. Protecting the rent money is a strong choice.",
+    waitText: "Price rejected resistance after the news. You kept your week safe going into rent day.", waitScore: 3 }
+];
+
+/* ---------- lessons (morning study) ---------- */
+const LESSONS = [
+  { q: "You have ₦30,000 and risk 2% per trade. What is the most you can lose on one trade?", a: ["₦600", "₦3,000", "₦6,000"], c: 0 },
+  { q: "Someone promises \"30% guaranteed every month\" if you send money to their account manager. What is it?", a: ["Almost certainly a scam", "A good broker", "Normal in forex"], c: 0 },
+  { q: "What does support mean on a chart?", a: ["An area where buyers stepped in before", "A guaranteed bottom", "The broker's minimum price"], c: 0 },
+  { q: "Where does a stop-loss usually go on a buy at support?", a: ["Just below the support level", "Above your entry", "You don't need one"], c: 0 },
+  { q: "Leverage of 1:500 means…", a: ["Small price moves cause big gains and big losses", "You can't lose money", "The broker shares your losses"], c: 0 },
+  { q: "What's the smart move before big news like NFP?", a: ["Reduce size or wait", "Double your position", "Follow a signal group"], c: 0 },
+  { q: "Your account fell from ₦40,000 to ₦30,000. That 25% fall is called…", a: ["Drawdown", "Spread", "Swap"], c: 0 }
+];
+
+/* ---------- life events (afternoon) ---------- */
+const FIXED = {
+  4: { id: "nepa", title: "NEPA took light", text: "No light since morning. Your laptop is on 12%. Fuel for the gen is ₦2,000.",
+       choices: [
+         { label: "Buy gen fuel", k: "−₦2,000", fx: s => { s.cash -= 2000; s.light = true; return "Gen is humming. You can trade tonight."; } },
+         { label: "Manage the battery", k: "no trading", fx: s => { s.light = false; s.noTrade = true; return "No light, no chart tonight. The market will be there tomorrow."; } }] }
+};
+const POOL = [
+  { id: "signals", title: "VIP signals", text: "A Telegram \"Oga\" DMs you: \"95% accurate gold signals, ₦5,000 for VIP. Last 3 slots!\"",
+    choices: [
+      { label: "Pay for VIP", k: "−₦5,000", fx: s => { s.cash -= 5000; s.disc -= 8; s.scams.fell++; return "The \"VIP\" signals were copied from a free channel. Discipline −8."; } },
+      { label: "Block him", k: "+discipline", fx: s => { s.disc += 5; s.scams.dodged++; return "Nobody can promise 95%. Discipline +5."; } }] },
+  { id: "ponzi", title: "Double your money", text: "Your guy swears: \"Put ₦10,000 in this app, it doubles in 3 days. I don cash out twice!\"",
+    choices: [
+      { label: "Send ₦10,000", k: "−₦10,000", fx: s => { s.cash -= 10000; s.disc -= 12; s.scams.fell++; s.pending.push({ day: s.day + 2, text: "The \"double your money\" app has frozen withdrawals. Your ₦10,000 is gone." }); return "Sent. He says \"trust the process\". Discipline −12."; } },
+      { label: "Decline", k: "+discipline", fx: s => { s.disc += 8; s.scams.dodged++; return "Guaranteed returns are the red flag. Discipline +8."; } }] },
+  { id: "uncle", title: "Family call", text: "Uncle in the village needs ₦4,000 for hospital drugs.",
+    choices: [
+      { label: "Send ₦4,000", k: "−₦4,000", fx: s => { s.cash -= 4000; return "Family first. This is why an emergency fund matters."; } },
+      { label: "Promise next week", k: "", fx: s => "He understands. You feel the guilt small." }] },
+  { id: "bet", title: "Sure banker", text: "Your friend's 5-odds slip: \"Stake ₦2,000, chop ₦10,000 tonight. E sure!\"",
+    choices: [
+      { label: "Stake ₦2,000", k: "−₦2,000", fx: s => { s.cash -= 2000; s.disc -= 6; return "One match cut the slip. Discipline −6."; } },
+      { label: "Skip it", k: "+discipline", fx: s => { s.disc += 4; return "Your money, your plan. Discipline +4."; } }] },
+  { id: "owambe", title: "Owambe Saturday", text: "Cousin's wedding. Aso-ebi is ₦7,000 and everybody is watching.", nepo: true,
+    choices: [
+      { label: "Buy aso-ebi", k: "−₦7,000", fx: s => { s.cash -= 7000; return "You looked clean. The wallet looks lean."; } },
+      { label: "Wear last year's", k: "", fx: s => "Nobody noticed. Probably." }] },
+  { id: "data", title: "Data finished", text: "Your data just finished. ₦1,000 for a bundle, or no chart tonight.",
+    choices: [
+      { label: "Buy data", k: "−₦1,000", fx: s => { s.cash -= 1000; return "Back online."; } },
+      { label: "Skip tonight", k: "no trading", fx: s => { s.noTrade = true; return "No data, no trade tonight."; } }] },
+  { id: "landlord", title: "Landlord's reminder", text: "\"Good afternoon. Just reminding you, rent is due on day 7. No story this time.\"",
+    choices: [{ label: "Noted", k: "", fx: s => "The rent jar is your friend." }] }
+];
+
+/* ---------- state ---------- */
+let setup = { path: "lapo", city: "Lagos" };
+let S = null;
+function newGame() {
+  const p = PATHS[setup.path];
+  S = { path: setup.path, city: setup.city, day: 1, phase: "morning", cash: p.start, jar: 0, energy: 80, disc: 50, know: 0,
+        light: true, noTrade: false, studied: false, pending: [], used: new Set(), msgs: [], lastLoss: false, lastRisk: 0,
+        trades: 0, wins: 0, scams: { dodged: 0, fell: 0 }, owed: 0, log: [] };
+  startDay();
+}
+function startDay() {
+  S.phase = "morning"; S.pathOut = null; S.noTrade = false; S.studied = false; S.dir = null; S.risk = 2; S.choice = null; S.trade = null; S.extra = null; S.result = null; S.light = true;
+  S.msgs = S.pending.filter(p => p.day === S.day).map(p => p.text); S.pending = S.pending.filter(p => p.day !== S.day);
+  if (S.owed) { S.cash += S.owed; S.msgs.push(`Your client finally paid: +${naira(S.owed)}.`); S.owed = 0; }
+  render();
+}
+function pickEvent() {
+  if (FIXED[S.day]) return FIXED[S.day];
+  if (S.day === 6 && !S.used.has("landlord")) { S.used.add("landlord"); return POOL.find(e => e.id === "landlord"); }
+  const r = mulberry32(S.day * 97 + (S.path === "nepo" ? 5 : 0))();
+  if (S.day < 2 || r > 0.6) return null;
+  const pool = POOL.filter(e => !S.used.has(e.id) && e.id !== "landlord" && (!e.nepo || S.path === "nepo" || r < .3));
+  if (!pool.length) return null;
+  const e = pool[Math.floor(r / 0.6 * pool.length) % pool.length]; S.used.add(e.id); return e;
+}
+
+/* ---------- morning hustles ---------- */
+const HUSTLES = [
+  { id: "pos", t: "Run a POS shift", d: "Steady cash at the junction.", k: "+₦3,500 · −30 energy", e: -30,
+    fx: s => { s.cash += 3500; return "Long queues, small chops. +₦3,500."; } },
+  { id: "gig", t: "Design a flyer for a client", d: "Better pay, but clients don't always pay on time.", k: "+₦6,000 · −45 energy", e: -45,
+    fx: s => { const late = mulberry32(s.day * 13)() < 0.35; if (late) { s.owed += 6000; return "Client said \"I'll send it tomorrow\". Payment pending."; } s.cash += 6000; return "Client paid on the spot. +₦6,000."; } },
+  { id: "study", t: "Study a BossFx lesson", d: "Answer one question. Unlocks tonight's coach tip.", k: "+knowledge · −15 energy", e: -15, fx: null },
+  { id: "rest", t: "Rest and recover", d: "Trading tired leads to bad decisions.", k: "+35 energy", e: 35,
+    fx: s => "You slept in. Fresh head tonight." }
+];
+
+function afterMorning() {
+  const ev = pickEvent();
+  if (ev) { S.event = ev; S.phase = "event"; } else { S.phase = "market"; }
+  render();
+}
+
+/* ---------- market ---------- */
+function makeMarket(sc) {
+  const rand = mulberry32(sc.seed * 7919);
+  const rnd = (a, b) => a + rand() * (b - a);
+  const S0 = Math.round(rnd(4150, 4240) * 10) / 10, R0 = Math.round((S0 + rnd(50, 68)) * 10) / 10, span = R0 - S0, mid = (S0 + R0) / 2;
+  const end = sc.zone === "support" ? S0 + rnd(.05, .1) * span : sc.zone === "resistance" ? R0 - rnd(.05, .1) * span : mid + rnd(-.1, .1) * span;
+  const first = rand() < .5 ? R0 : S0;
+  const way = [mid + rnd(-.2, .2) * span, first, first === R0 ? S0 : R0, first, end];
+  const n = 44, closes = [];
+  for (let i = 0; i <= n; i++) { const t = i / n * (way.length - 1), k = Math.min(Math.floor(t), way.length - 2), f = t - k, e = f * f * (3 - 2 * f); closes.push(way[k] + (way[k + 1] - way[k]) * e + rnd(-.05, .05) * span); }
+  const touch = [1, 2, 3].map(k => Math.round(k / (way.length - 1) * n)), c = [];
+  for (let i = 1; i <= n; i++) {
+    let o = clamp(closes[i - 1], S0 + .02 * span, R0 - .02 * span), cl = clamp(closes[i], S0 + .02 * span, R0 - .02 * span);
+    let h = Math.min(Math.max(o, cl) + rnd(.01, .07) * span, R0 - .005 * span), l = Math.max(Math.min(o, cl) - rnd(.01, .07) * span, S0 + .005 * span);
+    if (touch.includes(i)) { const lv = way[touch.indexOf(i) + 1]; if (lv === R0) h = R0 + rnd(0, .02) * span; else l = S0 - rnd(0, .02) * span; }
+    c.push({ o, h, l, c: cl });
+  }
+  c[c.length - 1].c = end;
+  return { S: S0, R: R0, span, candles: c, rand };
+}
+function outcomePath(m, entry, target) {
+  const rnd = (a, b) => a + m.rand() * (b - a);
+  const beyond = target + (target > entry ? 1 : -1) * m.span * .03, n = 11, out = [];
+  const lo = Math.min(entry, target) - m.span * .25, hi = Math.max(entry, target) + m.span * .25;
+  let prev = entry;
+  for (let i = 1; i <= n; i++) {
+    const f = i / n, e = f * f * (3 - 2 * f);
+    let cl = entry + (beyond - entry) * e + (i < n ? rnd(-.06, .06) * m.span * (1 - f) : 0);
+    cl = clamp(cl, lo, hi);
+    out.push({ o: prev, h: Math.max(prev, cl) + rnd(.005, .035) * m.span, l: Math.min(prev, cl) - rnd(.005, .035) * m.span, c: cl }); prev = cl;
+  }
+  return out;
+}
+let anim = null;
+function drawChart(canvas, m, trade, extra) {
+  const dpr = window.devicePixelRatio || 1, w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return;
+  canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+  const g = canvas.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  const all = m.candles.concat(extra || []);
+  let lo = Math.min(m.S, ...all.map(c => c.l)), hi = Math.max(m.R, ...all.map(c => c.h));
+  if (trade) { lo = Math.min(lo, trade.sl, trade.tp); hi = Math.max(hi, trade.sl, trade.tp); }
+  const pad = (hi - lo) * .08; lo -= pad; hi += pad;
+  const axisW = 56, plotW = w - axisW, cw = plotW / (m.candles.length + 14), y = p => h - 6 - (p - lo) / (hi - lo) * (h - 12);
+  g.font = "11px 'Geist Mono', ui-monospace, monospace"; g.textBaseline = "middle";
+  g.strokeStyle = "#1F1F1F"; for (let i = 0; i <= 4; i++) { const p = lo + (hi - lo) * i / 4, yy = Math.round(y(p)) + .5; g.beginPath(); g.moveTo(0, yy); g.lineTo(plotW, yy); g.stroke(); g.fillStyle = "#6E726F"; g.fillText(p.toFixed(1), plotW + 6, yy); }
+  const band = m.span * .035;
+  [[m.R, "#F02828", "RESISTANCE"], [m.S, "#00B450", "SUPPORT"]].forEach(([lv, col, nm]) => {
+    g.fillStyle = col + "22"; g.fillRect(0, y(lv + band), plotW, y(lv - band) - y(lv + band));
+    g.strokeStyle = col; g.setLineDash([6, 5]); g.beginPath(); g.moveTo(0, y(lv)); g.lineTo(plotW, y(lv)); g.stroke(); g.setLineDash([]);
+    g.fillStyle = col; const tw = g.measureText(nm).width + 10; g.fillRect(4, y(lv) - 9, tw, 18); g.fillStyle = "#0B0B0B"; g.fillText(nm, 9, y(lv));
+  });
+  if (trade) [[trade.tp, "#00B450", "TP"], [trade.entry, "#F2F2F2", "ENTRY"], [trade.sl, "#F02828", "SL"]].forEach(([p, col, nm]) => {
+    g.strokeStyle = col; g.lineWidth = 1.5; g.beginPath(); g.moveTo(cw * (m.candles.length - 1), y(p)); g.lineTo(plotW, y(p)); g.stroke(); g.lineWidth = 1;
+    g.fillStyle = col; const tw = g.measureText(nm).width + 10; g.fillRect(plotW - tw - 2, y(p) - 9, tw, 18); g.fillStyle = "#0B0B0B"; g.fillText(nm, plotW - tw + 3, y(p));
+  });
+  all.forEach((c, i) => { const x = cw * (i + .5), col = c.c >= c.o ? "#00B450" : "#F02828"; g.strokeStyle = col; g.fillStyle = col; g.lineWidth = Math.max(1, cw * .12);
+    g.beginPath(); g.moveTo(x, y(c.h)); g.lineTo(x, y(c.l)); g.stroke(); const top = y(Math.max(c.o, c.c)), bot = Math.max(top + 1.5, y(Math.min(c.o, c.c))); g.fillRect(x - cw * .32, top, cw * .64, bot - top); });
+  const last = all[all.length - 1].c; g.fillStyle = "#F2F2F2"; g.fillRect(plotW + 2, y(last) - 9, axisW - 2, 18); g.fillStyle = "#0B0B0B"; g.fillText(last.toFixed(1), plotW + 6, y(last));
+}
+
+function resolveMarket(choice) {
+  const sc = WEEK[S.day - 1], m = S.market, notes = []; let d = 0, pnl = 0, kind = "neutral", title = "";
+  if (choice === "wait") {
+    d = sc.waitScore; title = "You waited"; notes.push(sc.waitText);
+    if (d === 0) notes.push("Discipline is following a plan, not only avoiding risk. Learn to recognise a clean level.");
+    S.lastLoss = false; S.lastRisk = 0;
+  } else if (choice === "protect") {
+    const need = RENT - S.jar, move = Math.min(need, Math.max(0, S.cash));
+    S.cash -= move; S.jar += move; d = need > 0 ? 3 : 0; title = "Rent protected";
+    notes.push(move > 0 ? `You moved ${naira(move)} into the rent jar. It can't be lost on a trade.` : "The rent jar is already full.");
+    notes.push(sc.waitText); S.lastLoss = false; S.lastRisk = 0;
+  } else {
+    const entry = m.candles[m.candles.length - 1].c, dir = S.dir;
+    const sl = dir === "buy" ? (sc.zone === "support" ? m.S - m.span * .06 : entry - .22 * m.span) : (sc.zone === "resistance" ? m.R + m.span * .06 : entry + .22 * m.span);
+    const r = Math.abs(entry - sl), tp = dir === "buy" ? entry + 2 * r : entry - 2 * r;
+    const win = sc.win[dir], riskAmt = S.cash * S.risk / 100;
+    pnl = win ? 2 * riskAmt : -riskAmt; kind = win ? "win" : "loss"; title = win ? "Target hit" : "Stopped out";
+    const aligned = (dir === "buy" && sc.zone === "support") || (dir === "sell" && sc.zone === "resistance");
+    const against = (dir === "buy" && sc.zone === "resistance") || (dir === "sell" && sc.zone === "support");
+    if (S.risk <= 2) { d += 2; notes.push(`${S.risk}% risk: professional sizing.`); } else if (S.risk === 5) { d -= 3; notes.push("5% on one trade is heavy."); } else { d -= 7; notes.push("10% on one trade is gambling, not trading."); }
+    if (aligned) { d += 4; notes.push(`You ${dir === "buy" ? "bought at support" : "sold at resistance"}: a good process.`); }
+    else if (against) { d -= 4; notes.push(`You ${dir === "buy" ? "bought into resistance" : "sold into support"}: against the level.`); }
+    else { d -= 2; notes.push("No level nearby: weak setup."); }
+    if (sc.news) { d -= 2; notes.push("Trading into high-impact news adds risk you can't control."); }
+    if (S.energy < 25) { d -= 2; notes.push("You traded exhausted."); }
+    if (S.lastLoss && S.risk > S.lastRisk) { d -= 5; notes.push("Bigger size right after a loss is revenge trading."); }
+    if (win && !aligned) notes.push("You won, but the process was weak. Don't let luck teach you bad habits.");
+    if (!win && aligned) notes.push("Good process, bad outcome. That happens; your edge shows over many trades.");
+    S.trade = { entry, sl, tp }; S.trades++; if (win) S.wins++; S.lastLoss = !win; S.lastRisk = S.risk;
+    S.pathOut = outcomePath(m, entry, win ? tp : sl);
+  }
+  S.result = { kind, title, notes, pnl, d, choice };
+  S.log.push({ day: S.day, choice: choice === "trade" ? S.dir : choice, d, pnl });
+  if (choice === "trade" && !reduceMotion) {
+    S.phase = "playing"; render();
+    let k = 0; clearInterval(anim);
+    anim = setInterval(() => { k++; drawChart($("#chart"), m, S.trade, S.pathOut.slice(0, k)); if (k >= S.pathOut.length) { clearInterval(anim); setTimeout(finishMarket, 350); } }, 110);
+  } else finishMarket();
+}
+function finishMarket() { if (S.pathOut) S.extra = S.pathOut; S.cash += S.result.pnl; S.disc = clamp(S.disc + S.result.d, 0, 100); S.phase = "marketResult"; render(); }
+
+function night() {
+  const p = PATHS[S.path], food = p.food;
+  S.cash -= food; S.energy = clamp(S.energy + (S.light ? 25 : 12), 0, 100);
+  const lines = [`Food and transport: −${naira(food)}.`, S.light ? "Light stayed on. You slept well: +25 energy." : "No light, hot room, mosquitoes: +12 energy."];
+  if (S.day === DAYS) {
+    let paid = Math.min(S.jar, RENT); S.jar -= paid;
+    if (paid < RENT) { const rest = RENT - paid, fromCash = Math.min(rest, Math.max(0, S.cash)); S.cash -= fromCash; paid += fromCash; }
+    S.rentPaid = paid >= RENT;
+    lines.push(S.rentPaid ? `Rent of ${naira(RENT)} paid to the landlord.` : `You were ${naira(RENT - paid)} short on rent. Quit notice is on the door.`);
+  }
+  S.nightLines = lines; S.phase = "night";
+  if (S.cash + S.jar <= 0 && S.day < DAYS) { S.broke = true; }
+  render();
+}
+
+/* ---------- scene ---------- */
+function scene() {
+  const ph = S ? S.phase : "start", day = S ? S.day : 1;
+  const tod = ph === "morning" ? "morning" : ph === "event" ? "afternoon" : (ph === "start" || ph === "over") ? "dusk" : "night";
+  const sky = { morning: ["#F7B267", "#F4845F"], afternoon: ["#5DA9E9", "#9AD1F5"], dusk: ["#2B1B3D", "#E2725B"], night: ["#060B16", "#14233B"] }[tod];
+  const light = S ? S.light : true, isNight = tod === "night" || tod === "dusk";
+  const sun = tod === "morning" ? `<circle cx="70" cy="62" r="22" fill="#FFE8A3"/>` : tod === "afternoon" ? `<circle cx="300" cy="38" r="18" fill="#FFF6D5"/>` : `<circle cx="330" cy="36" r="12" fill="#E9EEF6"/><circle cx="335" cy="32" r="11" fill="${sky[0]}"/>`;
+  const stars = isNight ? [[40,20],[90,34],[150,14],[210,28],[260,18],[370,46],[120,50]].map(([x, y], i) => `<circle class="twinkle" style="animation-delay:${i * .4}s" cx="${x}" cy="${y}" r="1.2" fill="#fff"/>`).join("") : "";
+  const winLit = isNight ? "#F2B233" : "#2C3540";
+  const blds = [[0,96,36,64],[34,80,28,80],[60,104,40,56],[98,70,24,90],[120,88,34,72],[152,58,20,102],[170,92,30,68],[198,76,26,84],[222,100,38,60],[258,84,22,76],[278,66,30,94],[306,96,40,64],[344,78,26,82],[368,92,32,68]];
+  const bldSvg = blds.map(([x, y, w, h], i) => {
+    let wins = ""; for (let yy = y + 8; yy < 150; yy += 12) for (let xx = x + 5; xx < x + w - 5; xx += 9) { const on = ((xx * 7 + yy * 3 + i) % 5) < (isNight ? 3 : 1); wins += `<rect x="${xx}" y="${yy}" width="4" height="5" fill="${on ? winLit : "#2C3540"}" opacity="${on ? .9 : .5}"/>`; }
+    return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${isNight ? "#0E1622" : "#2A3644"}"/>${wins}`;
+  }).join("");
+  const screen = (ph === "market" || ph === "playing" || ph === "marketResult") ? "#00B450" : "#3A4A5C";
+  const roomLight = light ? (isNight ? "rgba(242,178,51,.35)" : "rgba(255,255,255,.08)") : "rgba(0,0,0,.35)";
+  return `
+  <div class="scene" role="img" aria-label="Lagos scene: ${tod}, day ${day}, ${light ? "light on" : "no light"}">
+    <svg viewBox="0 0 400 210" preserveAspectRatio="xMidYMid slice">
+      <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient>
+      <linearGradient id="water" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${isNight ? "#0B1A2A" : "#2E6F8E"}"/><stop offset="1" stop-color="${isNight ? "#050C14" : "#1D4B63"}"/></linearGradient></defs>
+      <rect width="400" height="210" fill="url(#sky)"/>${stars}${sun}
+      ${bldSvg}
+      <rect y="150" width="400" height="60" fill="url(#water)"/>
+      <g opacity=".35">${[160, 172, 186].map((y, i) => `<line x1="${20 + i * 60}" y1="${y}" x2="${70 + i * 60}" y2="${y}" stroke="#9AD1F5" stroke-width="1"/><line x1="${220 + i * 40}" y1="${y + 4}" x2="${250 + i * 40}" y2="${y + 4}" stroke="#9AD1F5" stroke-width="1"/>`).join("")}</g>
+      <rect y="140" width="400" height="6" fill="#4A4F55"/>${Array.from({ length: 11 }, (_, i) => `<rect x="${i * 40 + 16}" y="146" width="5" height="22" fill="#3A3F45"/>`).join("")}
+      <g class="danfo"><rect x="0" y="126" width="46" height="15" rx="3" fill="#F5C518"/><rect x="0" y="133" width="46" height="2.5" fill="#111"/><rect x="5" y="128" width="8" height="5" fill="#1E2A36"/><rect x="16" y="128" width="8" height="5" fill="#1E2A36"/><rect x="27" y="128" width="8" height="5" fill="#1E2A36"/><circle cx="10" cy="141" r="3" fill="#111"/><circle cx="36" cy="141" r="3" fill="#111"/></g>
+      <g class="keke"><rect x="0" y="130" width="22" height="11" rx="4" fill="#00B450"/><rect x="3" y="132" width="9" height="5" fill="#1E2A36"/><circle cx="5" cy="141" r="2.5" fill="#111"/><circle cx="18" cy="141" r="2.5" fill="#111"/></g>
+      <!-- your room -->
+      <g transform="translate(286,92)">
+        <rect width="112" height="118" fill="#1A1410" stroke="#000" stroke-width="2"/>
+        <rect width="112" height="118" fill="${roomLight}"/>
+        <line x1="56" y1="0" x2="56" y2="14" stroke="#555"/><circle cx="56" cy="18" r="5" fill="${light ? "#F2B233" : "#333"}"/>
+        ${light ? `<circle cx="56" cy="18" r="14" fill="#F2B233" opacity=".18"/>` : ""}
+        <rect x="14" y="78" width="84" height="6" fill="#5A3E2B"/><rect x="20" y="84" width="4" height="34" fill="#5A3E2B"/><rect x="88" y="84" width="4" height="34" fill="#5A3E2B"/>
+        <rect x="52" y="60" width="34" height="20" rx="2" fill="#222"/><rect x="54" y="62" width="30" height="15" fill="${screen}" opacity="${light ? 1 : .4}"/>
+        ${screen === "#00B450" ? `<polyline points="56,74 62,70 66,72 71,66 76,68 82,63" fill="none" stroke="#04140A" stroke-width="1.5"/>` : ""}
+        <circle cx="34" cy="50" r="9" fill="#5B3A29"/><path d="M22 78 Q24 60 34 60 Q44 60 46 78 Z" fill="${S && S.path === "nepo" ? "#7A1F2B" : "#1F6F4A"}"/>
+        <rect x="27" y="47" width="14" height="4" rx="2" fill="#111" opacity=".85"/>
+      </g>
+    </svg>
+    <span class="badge"><b>${S ? `DAY ${day}/${DAYS}` : "LAGOS"}</b> · ${tod.toUpperCase()}${S ? " · " + CITY[S.city] : ""}</span>
+    <span class="light ${light ? "on" : "off"}">${light ? "Light dey" : "NEPA took light"}</span>
+  </div>`;
+}
+
+/* ---------- render ---------- */
+function hud() {
+  const jarPct = S.jar / RENT * 100;
+  return `<div class="hud">
+    <div class="stat"><div class="label">Cash</div><div class="v ${S.cash < 0 ? "neg" : ""}">${naira(S.cash)}</div></div>
+    <div class="stat"><div class="label">Rent jar</div><div class="v">${naira(S.jar)}</div><div class="meter amber"><i style="width:${clamp(jarPct, 0, 100)}%"></i></div></div>
+    <div class="stat"><div class="label">Energy</div><div class="v">${S.energy}</div><div class="meter ${S.energy < 25 ? "red" : ""}"><i style="width:${S.energy}%"></i></div></div>
+    <div class="stat"><div class="label">Discipline</div><div class="v">${S.disc}</div><div class="meter"><i style="width:${S.disc}%"></i></div></div>
+  </div>
+  <div class="steps" aria-label="Week progress">${Array.from({ length: DAYS }, (_, i) => `<span class="${i + 1 < S.day ? "done" : i + 1 === S.day ? "now" : ""}"></span>`).join("")}</div>`;
+}
+
+function render() {
+  const app = $("#app");
+  if (!S) return renderStart(app);
+  if (S.phase === "over") return renderEnd(app);
+  let body = "";
+  const msgs = S.msgs && S.msgs.length ? S.msgs.map(t => `<div class="card loss"><p>${t}</p></div>`).join("") : "";
+  if (S.phase === "morning") {
+    body = `${msgs}<div class="card"><div class="label">Morning · How will you spend your day?</div><h3>Rise and hustle</h3>
+      <div class="opts">${HUSTLES.map(h => `<button class="opt" data-h="${h.id}" ${h.e < 0 && S.energy + h.e < 0 ? "disabled" : ""}><span class="t">${h.t}</span><span class="d">${h.d}</span><span class="k">${h.k}</span></button>`).join("")}</div>
+      <p class="note">Rent of ${naira(RENT)} is due on day ${DAYS}. ${S.day === DAYS ? "That's tonight." : `${DAYS - S.day} day${DAYS - S.day === 1 ? "" : "s"} left.`}</p></div>`;
+  } else if (S.phase === "lesson") {
+    const L = LESSONS[(S.day - 1) % LESSONS.length];
+    body = `<div class="card"><div class="label">BossFx lesson · Day ${S.day}</div><h3>Quick check</h3><p>${L.q}</p>
+      <div class="opts">${L.a.map((a, i) => `<button class="opt" data-a="${i}"><span class="t">${a}</span></button>`).join("")}</div></div>`;
+  } else if (S.phase === "hustleDone") {
+    body = `<div class="card"><div class="label">Morning result</div><p>${S.hustleMsg}</p><div class="btns"><button class="primary" id="next">Go to afternoon</button></div></div>`;
+  } else if (S.phase === "event") {
+    const e = S.event;
+    body = `<div class="card event"><div class="label">Afternoon · Life happens</div><h3>${e.title}</h3><p>${e.text}</p>
+      <div class="opts">${e.choices.map((c, i) => `<button class="opt" data-c="${i}"><span class="t">${c.label}</span><span class="k">${c.k}</span></button>`).join("")}</div></div>`;
+  } else if (S.phase === "eventDone") {
+    body = `<div class="card"><div class="label">Afternoon result</div><p>${S.eventMsg}</p><div class="btns"><button class="primary" id="next">${S.noTrade ? "Go to night" : "Open the chart"}</button></div></div>`;
+  } else if (S.phase === "market" || S.phase === "playing" || S.phase === "marketResult") {
+    const sc = WEEK[S.day - 1];
+    if (!S.market) S.market = makeMarket(sc);
+    const tradable = S.cash;
+    let deck = "";
+    if (S.phase === "market") {
+      deck = `<div class="card"><div class="label">Night · Today's dilemma</div><h3>${sc.title}</h3>
+        ${S.studied ? `<p class="coach"><b>Coach:</b> ${sc.hint}</p>` : `<p class="note">Study in the morning to unlock the coach's read of the chart.</p>`}
+        <div class="opts">
+          <button class="opt ${S.choice === "trade" ? "sel" : ""}" data-m="trade" ${tradable <= 0 ? "disabled" : ""}><span class="t">Take the trade</span><span class="d">Risk virtual cash. Stop goes past the level, target is twice your risk.</span><span class="k">cash only</span></button>
+          <button class="opt ${S.choice === "wait" ? "sel" : ""}" data-m="wait"><span class="t">Wait for a clearer setup</span><span class="d">No trade tonight.</span><span class="k">±0</span></button>
+          <button class="opt ${S.choice === "protect" ? "sel" : ""}" data-m="protect"><span class="t">Protect the rent money</span><span class="d">Move cash into the rent jar. Jar money can't be lost on a trade.</span><span class="k">${naira(Math.min(RENT - S.jar, Math.max(0, S.cash)))}</span></button>
+        </div>
+        ${S.choice === "trade" ? `<div class="dirs"><button class="dir buy" data-d="buy" aria-pressed="${S.dir === "buy"}">BUY</button><button class="dir sell" data-d="sell" aria-pressed="${S.dir === "sell"}">SELL</button></div>
+          <div class="chips" aria-label="Risk per trade">${[1, 2, 5, 10].map(r => `<button class="chip" data-r="${r}" aria-pressed="${S.risk === r}">${r}% risk</button>`).join("")}</div>` : ""}
+        <button class="go" id="go" ${!S.choice || (S.choice === "trade" && !S.dir) ? "disabled" : ""}>${S.choice === "trade" ? (S.dir ? `Place ${S.dir} · risk ${naira(tradable * S.risk / 100)}` : "Pick buy or sell") : S.choice === "wait" ? "Wait tonight" : S.choice === "protect" ? "Fill the rent jar" : "Make your call"}</button>
+      </div>`;
+    } else if (S.phase === "playing") {
+      deck = `<div class="card"><div class="label">Trade running…</div><p class="note">Watch how price reacts to the levels.</p></div>`;
+    } else {
+      const r = S.result;
+      deck = `<div class="card ${r.kind}"><div class="label">Night · Decision recorded</div><h3>${r.title}</h3>
+        <div class="scoreline"><span class="${r.pnl > 0 ? "pos" : r.pnl < 0 ? "neg" : ""}">Virtual cash ${r.pnl >= 0 ? "+" : ""}${naira(r.pnl)}</span><span class="${r.d > 0 ? "pos" : r.d < 0 ? "neg" : ""}">Process score ${r.d >= 0 ? "+" : ""}${r.d}</span></div>
+        ${r.notes.map(n => `<p>${n}</p>`).join("")}
+        <div class="btns"><button class="primary" id="next">End the day</button></div></div>`;
+    }
+    body = `<div class="chartbox"><div class="charthead"><span><b>XAU/USD</b> · 1H · simulated</span><span>${sc.news ? "High-impact news today" : "Read the levels"}</span></div><canvas id="chart" role="img" aria-label="Simulated gold chart with support and resistance"></canvas></div>${deck}`;
+  } else if (S.phase === "night") {
+    body = `<div class="card"><div class="label">Night · Day ${S.day} closes</div>${S.nightLines.map(l => `<p>${l}</p>`).join("")}
+      <div class="btns"><button class="primary" id="next">${S.day === DAYS || S.broke ? "See my week" : "Sleep → Day " + (S.day + 1)}</button></div></div>`;
+  }
+  app.innerHTML = `<div class="brand"><span><b>NAIJA TRADER LIFE</b> · ${PATHS[S.path].name} mode</span><span>Virtual money only</span></div>${scene()}${hud()}${body}`;
+  bind();
+  const c = $("#chart"); if (c && S.phase !== "playing") requestAnimationFrame(() => drawChart(c, S.market, S.trade, S.extra));
+  else if (c) requestAnimationFrame(() => drawChart(c, S.market, S.trade, []));
+}
+
+function bind() {
+  document.querySelectorAll("[data-h]").forEach(b => b.onclick = () => {
+    const h = HUSTLES.find(x => x.id === b.dataset.h); S.energy = clamp(S.energy + h.e, 0, 100);
+    if (h.id === "study") { S.phase = "lesson"; return render(); }
+    S.hustleMsg = h.fx(S); S.phase = "hustleDone"; render();
+  });
+  document.querySelectorAll("[data-a]").forEach(b => b.onclick = () => {
+    const L = LESSONS[(S.day - 1) % LESSONS.length], ok = +b.dataset.a === L.c;
+    S.studied = true; S.know += ok ? 15 : 5; if (ok) S.disc = clamp(S.disc + 2, 0, 100);
+    S.hustleMsg = ok ? `Correct. Knowledge +15, discipline +2. The coach will read tonight's chart with you.` : `Not quite: the answer is "${L.a[L.c]}". Knowledge +5. The coach is still unlocked tonight.`;
+    S.phase = "hustleDone"; render();
+  });
+  document.querySelectorAll("[data-c]").forEach(b => b.onclick = () => { S.eventMsg = S.event.choices[+b.dataset.c].fx(S); S.disc = clamp(S.disc, 0, 100); S.phase = "eventDone"; render(); });
+  document.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { S.choice = b.dataset.m; render(); });
+  document.querySelectorAll("[data-d]").forEach(b => b.onclick = () => { S.dir = b.dataset.d; render(); });
+  document.querySelectorAll("[data-r]").forEach(b => b.onclick = () => { S.risk = +b.dataset.r; render(); });
+  const go = $("#go"); if (go) go.onclick = () => resolveMarket(S.choice);
+  const next = $("#next"); if (next) next.onclick = () => {
+    if (S.phase === "hustleDone") return afterMorning();
+    if (S.phase === "eventDone") { S.phase = S.noTrade ? "nightPrep" : "market"; if (S.noTrade) return night(); return render(); }
+    if (S.phase === "marketResult") return night();
+    if (S.phase === "night") { if (S.day === DAYS || S.broke) { S.phase = "over"; return render(); } S.day++; S.market = null; return startDay(); }
+  };
+}
+
+function loadBest() { try { return JSON.parse(localStorage.getItem("ntl7_best") || "[]"); } catch (e) { return []; } }
+function saveBest(x) { try { const b = loadBest(); b.push(x); b.sort((a, c) => c.score - a.score); localStorage.setItem("ntl7_best", JSON.stringify(b.slice(0, 5))); } catch (e) {} }
+
+function renderStart(app) {
+  const best = loadBest();
+  app.innerHTML = `
+    <div class="brand"><span><b>BOSSFX ACADEMY</b> presents</span><span>Free · No download · 5 minutes</span></div>
+    ${scene()}
+    <h1>NAIJA<br>TRADER <span>LIFE</span></h1>
+    <p class="tag">One week in Lagos. Rent is due on day 7, NEPA does what NEPA does, and the gold chart is calling. Can you survive without doing anything reckless?</p>
+    <div class="label">Choose your start</div>
+    <div class="paths">${Object.entries(PATHS).map(([k, p]) => `<button class="path" data-p="${k}" aria-pressed="${setup.path === k}"><span class="nm">${p.name}</span><span class="ds">${p.blurb}</span><span class="st">${p.stat}</span></button>`).join("")}</div>
+    <div class="label">Your city</div>
+    <div class="chips">${Object.keys(CITY).map(c => `<button class="chip" data-city="${c}" aria-pressed="${setup.city === c}">${c}</button>`).join("")}</div>
+    <button class="cta" id="start">Start my week</button>
+    <div class="how"><span class="label">How a day works</span><ol>
+      <li><b>Morning:</b> hustle for cash, study a lesson, or rest. Everything costs energy.</li>
+      <li><b>Afternoon:</b> life happens. Family, NEPA, scammers, owambe.</li>
+      <li><b>Night:</b> a simulated gold chart. Trade, wait, or protect the rent money.</li>
+      <li><b>Scoring:</b> your process is scored separately from the result. A good trade that loses still earns discipline.</li></ol></div>
+    ${best.length ? `<p class="note">Your best weeks on this device: ${best.map(b => `${b.rank} (${b.score})`).join(" · ")}</p>` : ""}
+    <p class="fine">Every player gets the same simulated week, so you can compare runs with friends. Virtual money only; the chart is simulated and predicts nothing about real gold prices. Not financial advice. Learn the real skill at <a href="https://bossfxacademy.com" target="_blank" rel="noopener">bossfxacademy.com</a>.</p>`;
+  app.querySelectorAll("[data-p]").forEach(b => b.onclick = () => { setup.path = b.dataset.p; render(); });
+  app.querySelectorAll("[data-city]").forEach(b => b.onclick = () => { setup.city = b.dataset.city; render(); });
+  $("#start").onclick = newGame;
+}
+
+function renderEnd(app) {
+  const p = PATHS[S.path], worth = S.cash + S.jar;
+  const survival = S.broke ? 0 : (S.rentPaid ? 100 : 40);
+  const know = clamp(S.know, 0, 100), score = Math.round(survival * .4 + S.disc * .4 + know * .2);
+  let rank, cap;
+  if (S.broke) { rank = "Back to the Village"; cap = "Sapa won this round. Most traders' first account blows up; the lesson is risk."; }
+  else if (!S.rentPaid) { rank = "Quit Notice Received"; cap = "The chart was not the problem. The rent money was."; }
+  else if (S.disc >= 75) { rank = "Level Respecter"; cap = "Rent paid, levels respected, scams dodged. Oga trader behaviour."; }
+  else if (S.disc >= 55) { rank = "Sapa Survivor"; cap = "You made rent. Now tighten the process."; }
+  else { rank = "Lucky, Not Disciplined"; cap = "Rent paid, but the process was shaky. Luck runs out."; }
+  if (!S.saved) { saveBest({ rank, score }); S.saved = true; }
+  const shareText = `I survived a week in Naija Trader Life 🇳🇬 (${p.name} mode, ${S.city})\n"${rank}" · Score ${score}\nRent: ${S.rentPaid ? "PAID ✅" : "short ❌"} · Discipline ${S.disc} · Knowledge ${know}\nScams dodged: ${S.scams.dodged}\nSame week for everyone. Beat my score 👇\n#NaijaTraderLife @bossfxacademy`;
+  app.innerHTML = `
+    <div class="brand"><span><b>NAIJA TRADER LIFE</b> · Week complete</span><span>Virtual money only</span></div>
+    ${scene()}
+    <div class="sharecard">
+      <div class="label">${p.name} mode · ${S.city} · Score ${score}</div>
+      <h2>${rank}</h2><p class="cap">${cap}</p>
+      <div class="scores">
+        <div class="stat"><div class="label">Survival</div><div class="v">${survival}</div><div class="meter amber"><i style="width:${survival}%"></i></div></div>
+        <div class="stat"><div class="label">Discipline</div><div class="v">${S.disc}</div><div class="meter"><i style="width:${S.disc}%"></i></div></div>
+        <div class="stat"><div class="label">Knowledge</div><div class="v">${know}</div><div class="meter"><i style="width:${know}%"></i></div></div>
+      </div>
+      <div class="scoreline"><span>Net worth ${naira(worth)}</span><span>Trades ${S.trades} · won ${S.wins}</span><span>Scams dodged ${S.scams.dodged}</span></div>
+    </div>
+    <div class="card"><div class="label">Challenge your friends</div>
+      <textarea class="share" id="share" readonly>${shareText}</textarea>
+      <div class="btns"><button class="primary" id="copy">Copy result</button><button id="again">Play again</button></div>
+      <p class="note" id="copied" hidden>Copied. Paste it on WhatsApp Status, X or TikTok.</p></div>
+    <div class="card"><div class="label">Ready for the real skill?</div><p>Levels, risk and patience are what BossFx Academy teaches. Join Sunday Market Prep every Sunday at 10PM WAT.</p>
+      <a class="chip" href="https://bossfxacademy.com" target="_blank" rel="noopener" style="text-decoration:none;color:var(--green);align-self:flex-start">Visit bossfxacademy.com</a></div>
+    <p class="fine">Virtual money only. Results in this game say nothing about real trading results. Not financial advice.</p>`;
+  $("#copy").onclick = () => { const t = $("#share"), done = () => { $("#copied").hidden = false; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t.value).then(done, () => { t.focus(); t.select(); }); else { t.focus(); t.select(); } };
+  $("#again").onclick = () => { S = null; render(); };
+}
+
+let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { const c = $("#chart"); if (c && S && S.market && S.phase !== "playing") drawChart(c, S.market, S.trade, S.extra); }, 120); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { const c = $("#chart"); if (c && S && S.market) drawChart(c, S.market, S.trade, S.extra); });
+render();
+})();
+</script>
+
+</body>
+</html>
