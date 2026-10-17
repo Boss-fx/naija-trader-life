@@ -532,7 +532,7 @@ function renderStart(app) {
       <li><b>Night:</b> a simulated gold chart. Trade, wait, or protect the rent money.</li>
       <li><b>Scoring:</b> your process is scored separately from the result. A good trade that loses still earns discipline.</li></ol></div>
     ${best.length ? `<p class="note">Your best weeks on this device: ${best.map(b => `${b.rank} (${b.score})`).join(" · ")}</p>` : ""}
-    <p class="fine">Every player gets the same simulated week, so you can compare runs with friends. Virtual money only; the chart is simulated and predicts nothing about real gold prices. Not financial advice. Learn the real skill at <a href="https://bossfxacademy.com" target="_blank" rel="noopener">bossfxacademy.com</a>.</p>`;
+    <p class="fine">Every player gets the same simulated week, so you can compare runs with friends. Virtual money only; the chart is simulated and predicts nothing about real gold prices. Not financial advice. Learn the real skill at <a href="https://bossfxcademy.com" target="_blank" rel="noopener">bossfxcademy.com</a>.</p>`;
   app.querySelectorAll("[data-p]").forEach(b => b.onclick = () => { setup.path = b.dataset.p; render(); });
   app.querySelectorAll("[data-city]").forEach(b => b.onclick = () => { setup.city = b.dataset.city; render(); });
   $("#start").onclick = newGame;
@@ -568,7 +568,7 @@ function renderEnd(app) {
       <div class="btns"><button class="primary" id="copy">Copy result</button><button id="again">Play again</button></div>
       <p class="note" id="copied" hidden>Copied. Paste it on WhatsApp Status, X or TikTok.</p></div>
     <div class="card"><div class="label">Ready for the real skill?</div><p>Levels, risk and patience are what BossFx Academy teaches. Join Sunday Market Prep every Sunday at 10PM WAT.</p>
-      <a class="chip" href="https://bossfxacademy.com" target="_blank" rel="noopener" style="text-decoration:none;color:var(--green);align-self:flex-start">Visit bossfxacademy.com</a></div>
+      <a class="chip" href="https://bossfxcademy.com" target="_blank" rel="noopener" style="text-decoration:none;color:var(--green);align-self:flex-start">Visit bossfxcademy.com</a></div>
     <p class="fine">Virtual money only. Results in this game say nothing about real trading results. Not financial advice.</p>`;
   $("#copy").onclick = () => { const t = $("#share"), done = () => { $("#copied").hidden = false; };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t.value).then(done, () => { t.focus(); t.select(); }); else { t.focus(); t.select(); } };
